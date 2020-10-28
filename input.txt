@@ -1,0 +1,2 @@
+./iobound -seconds 5
+./cpubound -seconds 4

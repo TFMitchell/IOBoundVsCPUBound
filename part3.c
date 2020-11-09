@@ -22,7 +22,7 @@ void sigFunc(int sig, pid_t pid);
 void alarmHandler(int sig);
 void sigchildHandler(int sig);
 
-enum statuses{NEW, RUNNING, STOPPED, FINISHED}; //available status to each process
+enum statuses{INVALID, NEW, RUNNING, STOPPED, FINISHED}; //available status to each process
 
 struct PCB { //two pieces of data for each process
   pid_t pid;
@@ -42,16 +42,10 @@ int main(int argc, char **argv)
 
   int sig;
   sigset_t set;
-
   sigemptyset(&set);
   sigaddset(&set, SIGUSR1); //gonna be waiting for SIGUSR1
   sigprocmask(SIG_BLOCK, &set, NULL);
   signal(SIGCHLD, sigchildHandler); //setting up handler to move processes to FINISHED
-
-  for (i = 0; i < maxProc; i++)
-  {
-    processes[i].pid = 0;
-  }
 
   if (argc != 3 || strcmp(argv[1], "-f")) //verifying argv
   {
@@ -88,7 +82,7 @@ int main(int argc, char **argv)
     if ((tmpPID = fork()) < 0) //setting value of child in parent
     {
       printf("Error forking. Trying next command.\n");
-      continue;
+      continue; //without advancing i
     }
 
     else if (tmpPID == 0) //inside child process
@@ -102,19 +96,19 @@ int main(int argc, char **argv)
       }
     }
     else //inside parent
+    {
       processes[c].pid = tmpPID;
       processes[c].status = NEW;
+    }
     c++; //next space in pids array
   }
 
-  sleep(3);
+  sleep(1);
 
+  processes[0].status = RUNNING; //launching first process
   sigFunc(SIGUSR1, processes[0].pid);
-  processes[0].status = RUNNING;
 
-  //alarmHandler(0); //starting the ball rolling
-
-  signal(SIGALRM, alarmHandler);
+  signal(SIGALRM, alarmHandler); //listening for 1 second intervals
   alarm(1);
 
   //waiting for children to finish
@@ -138,37 +132,27 @@ void sigFunc(int sig, pid_t pid)
 
 void alarmHandler(int sig)
 {
-  if (processes[currentProc].status != FINISHED) //if it finished while executing
-    sigFunc(SIGSTOP, processes[currentProc].pid);
+  if (processes[currentProc].status == RUNNING) //if current process is still running...
+  {
+    processes[currentProc].status = STOPPED;
+    sigFunc(SIGSTOP, processes[currentProc].pid); //stop it
+  }
+  currentProc++; //go to next process
 
+  while (processes[currentProc].status == INVALID //if it's invalid or finished, keep going
+          || processes[currentProc].status == FINISHED)
+  {
+    if (++currentProc == maxProc) //unless we reach the end of the array, then reset
+      currentProc = 0;
+  }
 
-    while (1)
-    {
-      if (processes[++currentProc].pid == 0)
-      {
-        currentProc = 0;
-        continue;
-      }
-      else if (processes[currentProc].status == FINISHED)
-      {
-        currentProc++;
-        continue;
-      }
-      else if (processes[currentProc].status == NEW)
-      {
-        processes[currentProc].status = RUNNING;
-        sigFunc(SIGUSR1, processes[currentProc].pid);
-        break;
-      }
-      else //if status is stopped
-      {
-        processes[currentProc].status = RUNNING;
-        sigFunc(SIGCONT, processes[currentProc].pid);
-        break;
-      }
-    }
+  if (processes[currentProc].status == NEW) //for new, it's SIGUSR1
+    sigFunc(SIGUSR1, processes[currentProc].pid);
+  else
+    sigFunc(SIGCONT, processes[currentProc].pid); //for stopped, it's SIGCONT
 
-  alarm(1);
+  processes[currentProc].status = RUNNING; //both of them are running now
+  alarm(1); //and we can wait another second
 }
 
 void sigchildHandler(int sig) //every time child exits

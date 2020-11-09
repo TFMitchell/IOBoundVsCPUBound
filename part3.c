@@ -46,7 +46,7 @@ int main(int argc, char **argv)
   sigemptyset(&set);
   sigaddset(&set, SIGUSR1); //gonna be waiting for SIGUSR1
   sigprocmask(SIG_BLOCK, &set, NULL);
-  signal(SIGCHLD, sigchildHandler);
+  signal(SIGCHLD, sigchildHandler); //setting up handler to move processes to FINISHED
 
   for (i = 0; i < maxProc; i++)
   {
@@ -97,7 +97,7 @@ int main(int argc, char **argv)
 
       if (execvp(arguments[0], arguments) == -1)
       {
-        printf("Error starting program. Trying next command.\n");
+        printf("Error starting program.\n");
         exit(0);
       }
     }
@@ -109,9 +109,10 @@ int main(int argc, char **argv)
 
   sleep(3);
 
-  printf("Begining first process for a 1 second quantum.\n");
   sigFunc(SIGUSR1, processes[0].pid);
   processes[0].status = RUNNING;
+
+  //alarmHandler(0); //starting the ball rolling
 
   signal(SIGALRM, alarmHandler);
   alarm(1);
@@ -121,7 +122,6 @@ int main(int argc, char **argv)
   {
     waitpid(processes[i].pid, 0, 0);
   }
-
   fclose(file);
   free(readBuf);
 
@@ -138,38 +138,40 @@ void sigFunc(int sig, pid_t pid)
 
 void alarmHandler(int sig)
 {
-  if (processes[currentProc].status != FINISHED)
+  if (processes[currentProc].status != FINISHED) //if it finished while executing
     sigFunc(SIGSTOP, processes[currentProc].pid);
 
-  while (1)
-  {
-    if (processes[++currentProc].pid == 0)
+
+    while (1)
     {
-      currentProc = 0;
-      continue;
+      if (processes[++currentProc].pid == 0)
+      {
+        currentProc = 0;
+        continue;
+      }
+      else if (processes[currentProc].status == FINISHED)
+      {
+        currentProc++;
+        continue;
+      }
+      else if (processes[currentProc].status == NEW)
+      {
+        processes[currentProc].status = RUNNING;
+        sigFunc(SIGUSR1, processes[currentProc].pid);
+        break;
+      }
+      else //if status is stopped
+      {
+        processes[currentProc].status = RUNNING;
+        sigFunc(SIGCONT, processes[currentProc].pid);
+        break;
+      }
     }
-    else if (processes[currentProc].status == FINISHED)
-    {
-      currentProc++;
-      continue;
-    }
-    else if (processes[currentProc].status == NEW)
-    {
-      processes[currentProc].status = RUNNING;
-      sigFunc(SIGUSR1, processes[currentProc].pid);
-      break;
-    }
-    else //if status is stopped
-    {
-      processes[currentProc].status = RUNNING;
-      sigFunc(SIGCONT, processes[currentProc].pid);
-      break;
-    }
-  }
+
   alarm(1);
 }
 
-void sigchildHandler(int sig)
+void sigchildHandler(int sig) //every time child exits
 {
   for (int i = 0; i < maxProc; i++)
   {

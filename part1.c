@@ -70,6 +70,8 @@ int main(int argc, char **argv)
       if (execvp(arguments[0], arguments) == -1)
       {
         printf("Error starting program. Trying next command.\n");
+        free(readBuf);
+        fclose(file);
         exit(0); //no longer need child
       }
     }

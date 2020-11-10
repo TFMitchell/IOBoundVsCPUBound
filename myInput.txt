@@ -1,0 +1,4 @@
+ls -a -r -s
+./iobound -seconds 7
+./cpubound -seconds 5
+./iobound -seconds 3

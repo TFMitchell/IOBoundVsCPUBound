@@ -94,6 +94,8 @@ int main(int argc, char **argv)
       if (execvp(arguments[0], arguments) == -1)
       {
         printf("Error starting program.\n");
+        free(readBuf);
+        fclose(file);
         exit(0);
       }
     }
@@ -113,19 +115,9 @@ int main(int argc, char **argv)
   signal(SIGALRM, alarmHandler); //listening for 1 second intervals
   alarm(1);
 
-  if ((printerPID = fork()) < 0)
-    printf("Error forking printer process.\n");
+  procPrinter();
+  system("clear");
 
-  else if (printerPID != 0) //new thread for printing
-    procPrinter();
-
-
-  //waiting for children to finish
-  for (i = 0; i < c; i++)
-  {
-    waitpid(processes[i].pid, 0, 0);
-  }
-  //sigFunc(SIGINT, printerPID);
   fclose(file);
   free(readBuf);
 
@@ -182,19 +174,22 @@ void procPrinter()
   size_t len = 1024;
   char *savePtr;
   int i, c;
+  char allFinishedFlag;
 
   while (1)
   {
     system("clear");
     printf("\n-----------------------------Process Info---------------------------\n");
-    printf("   pid    name   state  parent   utime\n");
+    printf("   PID      Name     State     Parent     Utime\n");
 
+    allFinishedFlag = 1;
     for (c = 0; c < maxProc; c++)
     {
       if (processes[c].status == FINISHED
             || processes[c].status == INVALID)
           continue;
 
+      allFinishedFlag = 0;
       sprintf(buf, "/proc/%d/stat", processes[c].pid);
 
       if ((file = fopen(buf, "r")) == NULL)
@@ -209,12 +204,16 @@ void procPrinter()
           i++;
         }
 
-        printf("  %-5s   %-10s   %-1s     %-5s       %-5s, \n", tokens[0], tokens[1], tokens[2], tokens[3], tokens[13]);
+        printf("  %-5s   %-10s   %-1s        %-5s     %-5s \n", tokens[0], tokens[1], tokens[2], tokens[3], tokens[13]);
 
       }
+      fclose(file);
     }
-
-
+    if (allFinishedFlag)
+    {
+      free(buf);
+      return;
+    }
 
     sleep(1);
   }

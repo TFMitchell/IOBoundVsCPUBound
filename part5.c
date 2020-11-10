@@ -1,5 +1,5 @@
 /*
-* Description: Project 2 Part 4
+* Description: Project 2 Part 5
 *
 * Author: Thomas Mitchell
 *
@@ -21,13 +21,14 @@
 void sigFunc(int sig, pid_t pid);
 void alarmHandler(int sig);
 void sigchildHandler(int sig);
-void procPrinter();
+void scheduler();
 
 enum statuses{INVALID, NEW, RUNNING, STOPPED, FINISHED}; //available status to each process
 
 struct PCB { //two pieces of data for each process
   pid_t pid;
   enum statuses status;
+  int recommendedQuantum;
 };
 struct PCB processes[maxProc]; //array of processes
 int currentProc = 0; //the one that is currently in execution
@@ -114,8 +115,7 @@ int main(int argc, char **argv)
   signal(SIGALRM, alarmHandler); //listening for 1 second intervals
   alarm(1);
 
-  procPrinter();
-  system("clear");
+  scheduler();
 
   fclose(file);
   free(readBuf);
@@ -127,8 +127,8 @@ void sigFunc(int sig, pid_t pid)
 {
   if (kill(pid, sig))
     printf("Error sending %d to %d.\n", sig, pid);
-  //else
-    //printf("Sent %d to %d.\n", sig, pid);
+  else
+    printf("Sent %d to %d.\n", sig, pid);
 }
 
 void alarmHandler(int sig)
@@ -165,7 +165,7 @@ void sigchildHandler(int sig) //every time child exits
   }
 }
 
-void procPrinter()
+void scheduler()
 {
   FILE *file;
   char *buf = (char*) malloc (1024 * sizeof(char));

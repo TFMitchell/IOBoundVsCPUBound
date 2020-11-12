@@ -1,12 +1,12 @@
 /*
-* Description: Project 2 Part 4
+* Description: Project 2 Part 4 - Implements a top-like interface for processes launched from an input.txt
 *
 * Author: Thomas Mitchell
 *
 * Date: 11-12-2020
 *
 * Notes:
-* 1. I discussed concepts with Lindsay
+* 1. N/A
 */
 #include <stdio.h>
 #include <stdlib.h>
@@ -53,8 +53,7 @@ int main(int argc, char **argv)
     printf("Incorrect syntax.\n");
     return 1;
   }
-  //else
-  if ((file = fopen(argv[2], "r")) == NULL)
+  else if ((file = fopen(argv[2], "r")) == NULL)
   {
     printf("Couldn't open file.\n");
     return 2;
@@ -127,8 +126,6 @@ void sigFunc(int sig, pid_t pid)
 {
   if (kill(pid, sig))
     printf("Error sending %d to %d.\n", sig, pid);
-  //else
-    //printf("Sent %d to %d.\n", sig, pid);
 }
 
 void alarmHandler(int sig)
@@ -180,7 +177,7 @@ void procPrinter()
     sleep(1);
     system("clear");
     printf("\n-----------------------------Process Info---------------------------\n");
-    printf("   PID      Name     State     Parent     Utime\n");
+    printf("   PID      Name     State     Parent     Utime     Stime\n");
 
     allFinishedFlag = 1;
     for (c = 0; c < maxProc; c++)
@@ -203,7 +200,7 @@ void procPrinter()
         {
           i++;
         }
-        printf("  %-5s   %-10s   %-1s        %-5s     %-5s \n", tokens[0], tokens[1], tokens[2], tokens[3], tokens[13]);
+        printf("  %-5s   %-10s   %-1s        %-5s     %-5s     %-5s\n", tokens[0], tokens[1], tokens[2], tokens[3], tokens[13], tokens[14]);
       }
       fclose(file);
     }

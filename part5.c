@@ -1,12 +1,12 @@
 /*
-* Description: Project 2 Part 5
+* Description: Project 2 Part 5 - Attempts to implement dynamic scheduling to make processes from input.txt run faster. Examines ratio of user to system time.
 *
 * Author: Thomas Mitchell
 *
 * Date: 11-12-2020
 *
 * Notes:
-* 1. I discussed concepts with Lindsay
+* 1. N/A
 */
 #include <stdio.h>
 #include <stdlib.h>
@@ -54,8 +54,7 @@ int main(int argc, char **argv)
     printf("Incorrect syntax.\n");
     return 1;
   }
-  //else
-  if ((file = fopen(argv[2], "r")) == NULL)
+  else if ((file = fopen(argv[2], "r")) == NULL)
   {
     printf("Couldn't open file.\n");
     return 2;
@@ -130,8 +129,6 @@ void sigFunc(int sig, pid_t pid)
 {
   if (kill(pid, sig))
     printf("Error sending %d to %d.\n", sig, pid);
-  //else
-    //printf("Sent %d to %d.\n", sig, pid);
 }
 
 void alarmHandler(int sig)
@@ -213,9 +210,9 @@ void scheduler()
         utime = atoi(tokens[13]);
         stime = atoi(tokens[14]);
 
-        if (stime == 0);
+        if (stime == 0); //can't divide by 0
 
-        else if (utime / stime > 2 && processes[c].recommendedQuantum > 100000)
+        else if (utime / stime < 15 && processes[c].recommendedQuantum > 100000) //scheduler logic
           processes[c].recommendedQuantum -= 50000;
 
         else if (processes[c].recommendedQuantum < 500000)//if (utime / stime > .5)

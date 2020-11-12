@@ -1,12 +1,12 @@
 /*
-* Description: Project 2 Part 3
+* Description: Project 2 Part 3 - Running child proesses from an input.txt sequentially with a one-second quantum between.
 *
 * Author: Thomas Mitchell
 *
 * Date: 11-12-2020
 *
 * Notes:
-* 1. I discussed concepts with Lindsay
+* 1. N/A
 */
 #include <stdio.h>
 #include <stdlib.h>
@@ -52,8 +52,8 @@ int main(int argc, char **argv)
     printf("Incorrect syntax.\n");
     return 1;
   }
-  //else
-  if ((file = fopen(argv[2], "r")) == NULL)
+
+  else if ((file = fopen(argv[2], "r")) == NULL)
   {
     printf("Couldn't open file.\n");
     return 2;
@@ -154,7 +154,7 @@ void alarmHandler(int sig)
     sigFunc(SIGCONT, processes[currentProc].pid); //for stopped, it's SIGCONT
 
   processes[currentProc].status = RUNNING; //both of them are running now
-  alarm(1); //and we can wait another second
+  alarm(1); //wait another second
 }
 
 void sigchildHandler(int sig) //every time child exits

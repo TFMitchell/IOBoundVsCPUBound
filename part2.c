@@ -1,12 +1,12 @@
 /*
-* Description: Project 2 Part 2
+* Description: Project 2 Part 2 - Making child processes from an input.txt. Concurrently run them, and send signals to all of them.
 *
 * Author: Thomas Mitchell
 *
 * Date: 11-12-2020
 *
 * Notes:
-* 1. I discussed concepts with Lindsay
+* 1. N/A
 */
 
 #include <stdio.h>
@@ -41,8 +41,7 @@ int main(int argc, char **argv)
     printf("Incorrect syntax.\n");
     return 1;
   }
-  //else
-  if ((file = fopen(argv[2], "r")) == NULL)
+  else if ((file = fopen(argv[2], "r")) == NULL)
   {
     printf("Couldn't open file.\n");
     return 2;

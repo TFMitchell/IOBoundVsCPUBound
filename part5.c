@@ -28,7 +28,7 @@ enum statuses{INVALID, NEW, RUNNING, STOPPED, FINISHED}; //available status to e
 struct PCB { //two pieces of data for each process
   pid_t pid;
   enum statuses status;
-  int recommendedQuantum;
+  int recommendedQuantum; //in microseconds
 };
 struct PCB processes[maxProc]; //array of processes
 int currentProc = 0; //the one that is currently in execution
@@ -103,6 +103,7 @@ int main(int argc, char **argv)
     {
       processes[c].pid = tmpPID;
       processes[c].status = NEW;
+      processes[c].recommendedQuantum = 200000;
     }
     c++; //next space in pids array
   }
@@ -112,10 +113,12 @@ int main(int argc, char **argv)
   processes[0].status = RUNNING; //launching first process
   sigFunc(SIGUSR1, processes[0].pid);
 
-  signal(SIGALRM, alarmHandler); //listening for 1 second intervals
-  alarm(1);
+  signal(SIGALRM, alarmHandler); //listening for .2 second intervals
+  ualarm(200000, 0);
 
   scheduler();
+
+  system("clear");
 
   fclose(file);
   free(readBuf);
@@ -127,8 +130,8 @@ void sigFunc(int sig, pid_t pid)
 {
   if (kill(pid, sig))
     printf("Error sending %d to %d.\n", sig, pid);
-  else
-    printf("Sent %d to %d.\n", sig, pid);
+  //else
+    //printf("Sent %d to %d.\n", sig, pid);
 }
 
 void alarmHandler(int sig)
@@ -152,8 +155,9 @@ void alarmHandler(int sig)
   else
     sigFunc(SIGCONT, processes[currentProc].pid); //for stopped, it's SIGCONT
 
-  processes[currentProc].status = RUNNING; //both of them are running now
-  alarm(1); //and we can wait another second
+  processes[currentProc].status = RUNNING; //set to running
+
+  ualarm(processes[currentProc].recommendedQuantum, 0); //give it recommendedQuantum to run
 }
 
 void sigchildHandler(int sig) //every time child exits
@@ -170,6 +174,7 @@ void scheduler()
   FILE *file;
   char *buf = (char*) malloc (1024 * sizeof(char));
   char *tokens[52];
+  int utime, stime;
   size_t len = 1024;
   char *savePtr;
   int i, c;
@@ -180,7 +185,7 @@ void scheduler()
     sleep(1);
     system("clear");
     printf("\n-----------------------------Process Info---------------------------\n");
-    printf("   PID      Name     State     Parent     Utime\n");
+    printf("   PID      Name     State     Parent     Utime     Stime     Quantum\n");
 
     allFinishedFlag = 1;
     for (c = 0; c < maxProc; c++)
@@ -203,11 +208,23 @@ void scheduler()
         {
           i++;
         }
-        printf("  %-5s   %-10s   %-1s        %-5s     %-5s \n", tokens[0], tokens[1], tokens[2], tokens[3], tokens[13]);
+        printf("  %-5s   %-10s   %-1s        %-5s     %-5s     %-5s     %d\n", tokens[0], tokens[1], tokens[2], tokens[3], tokens[13], tokens[14], processes[c].recommendedQuantum);
+
+        utime = atoi(tokens[13]);
+        stime = atoi(tokens[14]);
+
+        if (stime == 0);
+
+        else if (utime / stime > 2 && processes[c].recommendedQuantum > 100000)
+          processes[c].recommendedQuantum -= 50000;
+
+        else if (processes[c].recommendedQuantum < 500000)//if (utime / stime > .5)
+          processes[c].recommendedQuantum += 50000;
       }
       fclose(file);
     }
   }
+
   free(buf);
   return;
 
